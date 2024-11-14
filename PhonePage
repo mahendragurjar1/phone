@@ -1,0 +1,236 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:get/get.dart';
+import 'package:useloft/View/HomeScreen/HomePage.dart';
+import 'package:useloft/View/Login_Info/OTPScreen.dart';
+import 'package:useloft/View/Login_Info/UI.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:useloft/View/Sigin_Screen/Sigin.dart';
+
+Future<UserCredential> signInWithFacebook() async {
+  final LoginResult loginResult = await FacebookAuth.instance.login();
+  final OAuthCredential facebookAuthCredential =
+      FacebookAuthProvider.credential(
+          '${loginResult.accessToken?.tokenString}');
+  return FirebaseAuth.instance.signInWithCredential(facebookAuthCredential);
+}
+
+class LoginPage extends StatefulWidget {
+  LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  TextEditingController phoneController = TextEditingController();
+
+  @override
+  void dispose() {
+    phoneController.dispose(); // Dispose of the controller here
+    super.dispose();
+  }
+
+  void sendcode() async {
+    if (phoneController.text.isEmpty) {
+      Get.snackbar('Error Occurred', 'Please enter a phone number');
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: "+91" + phoneController.text,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Automatically sign in the user
+          await FirebaseAuth.instance.signInWithCredential(credential);
+          Get.to(Homepage()); // Navigate to home page
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          Get.snackbar('Error Occurred', e.message ?? 'Verification failed');
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          Get.to(OTPpages(vid: verificationId)); // Navigate to OTP input page
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {},
+      );
+    } on FirebaseAuthException catch (e) {
+      Get.snackbar('Error Occurred', e.message ?? 'An error occurred');
+    } catch (e) {
+      Get.snackbar('Error Occurred', e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ListView(
+        children: [
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 50),
+                child: Center(
+                  child: Image.asset(
+                    'assets/images/splashScreen.png',
+                    height: 250,
+                  ),
+                ),
+              ),
+              Center(
+                child: Text(
+                  'Welcome Back!',
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700),
+                ),
+              ),
+              Container(
+                child: Text(
+                  'Login to continue',
+                  style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700),
+                ),
+              ),
+              SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: FormContainerWidget(
+                  controller: phoneController, // Pass the controller here
+                  keyboardType: TextInputType.phone,
+                  hintText: "Phone Number",
+                  labelText: "Phone Number",
+                  isPasswordField: false,
+                  prefixIcon: Icon(Icons.phone_android),
+                ),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  sendcode(); // Call the sendcode function
+                },
+                style: ElevatedButton.styleFrom(
+                  fixedSize: Size(300, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  backgroundColor:
+                      Colors.blue, // Set your desired background color here
+                ),
+                child: Text(
+                  "GET OTP",
+                  style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+              SizedBox(
+                height: 30,
+              ),
+              Center(
+                child: Text(
+                  "Or Continue With",
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 30,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment
+                        .center, // Center the content vertically
+                    children: [
+                      InkWell(
+                        onTap: () async {
+                          final GoogleSignInAccount? googleUser =
+                              await GoogleSignIn().signIn();
+                          final GoogleSignInAuthentication? googleAuth =
+                              await googleUser?.authentication;
+                          final credential = GoogleAuthProvider.credential(
+                              accessToken: googleAuth?.accessToken,
+                              idToken: googleAuth?.idToken);
+                          await FirebaseAuth.instance
+                              .signInWithCredential(credential);
+                          Get.to(Homepage());
+                        },
+                        child: Image.asset('assets/images/Google.png'),
+                      ),
+                      SizedBox(
+                          height:
+                              8), // Add some space between the image and the text
+                      Text(
+                        'Google', // Your title here
+                        style: TextStyle(
+                            fontSize: 16), // Customize the text style as needed
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    width: 40,
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment
+                        .center, // Center the content vertically
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          signInWithFacebook();
+                        },
+                        child: Icon(
+                          Icons.facebook,
+                          color: Colors.blue,
+                          size: 30,
+                        ),
+                      ),
+                      SizedBox(
+                          height:
+                              8), // Add some space between the image and the text
+                      Text(
+                        'Facebook', // Your title here
+                        style: TextStyle(
+                            fontSize: 16), // Customize the text style as needed
+                      ),
+                    ],
+                  )
+                ],
+              ),
+              SizedBox(
+                height: 40,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Don’t have an account?',
+                    style: TextStyle(color: Colors.black87, fontSize: 14),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      Get.to(Signin());
+                    },
+                    child: Text(
+                      ' SIGN UP',
+                      style: TextStyle(color: Colors.blue, fontSize: 20),
+                    ),
+                  )
+                ],
+              )
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
