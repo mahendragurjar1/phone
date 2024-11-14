@@ -1,0 +1,136 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:pinput/pinput.dart';
+import 'package:useloft/View/HomeScreen/HomePage.dart';
+
+class OTPpages extends StatefulWidget {
+  final String vid;
+  const OTPpages({super.key, required this.vid});
+
+  @override
+  State<OTPpages> createState() => _OTPpagesState();
+}
+
+class _OTPpagesState extends State<OTPpages> {
+  var code = '';
+
+  signIn() async {
+    if (code.isEmpty) {
+      Get.snackbar('Error Occurred', 'Please enter the OTP code');
+      return;
+    }
+
+    if (code.length != 6) {
+      Get.snackbar('Error Occurred', 'Please enter a valid 6-digit OTP code');
+      return;
+    }
+
+    PhoneAuthCredential credential = PhoneAuthProvider.credential(
+      verificationId: widget.vid,
+      smsCode: code,
+    );
+
+    try {
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      Get.to(Homepage()); // Navigate to Home page after successful sign-in
+    } on FirebaseAuthException catch (e) {
+      Get.snackbar('Error Occurred', e.message ?? 'An unknown error occurred');
+    } catch (e) {
+      Get.snackbar('Error Occurred', e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.blue,
+        title: const Text(
+          'OTP Verification',
+          style: TextStyle(
+              color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(height: 60),
+            Center(
+                child: Image.asset('assets/images/splashScreen.png')
+            ),SizedBox(height: 10),
+            Container(
+              padding: EdgeInsets.only(top: 100),
+              child: Text(
+                'OTP Verification',
+                style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w700),
+              ),
+            ),
+            Center(
+              child: Container(
+                padding: EdgeInsets.all(10),
+                child: Text(
+                  'Enter the verification code we just sent on your Phone Number.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 17,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+            SizedBox(height: 30),
+            Pinput(
+              length: 6,
+              onChanged: (value) {
+                setState(() {
+                  code = value;
+                });
+              },
+              defaultPinTheme: PinTheme(
+                width: 56,
+                height: 56,
+                textStyle: TextStyle(
+                  fontSize: 20,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w600,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.blue),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+            SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: () {
+                signIn();
+              },
+              style: ElevatedButton.styleFrom(
+                fixedSize: Size(300, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                backgroundColor:
+                    Colors.blue, // Set your desired background color here
+              ),
+              child: Text(
+                "VERIFY",
+                style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
